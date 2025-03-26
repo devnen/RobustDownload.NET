@@ -1,8 +1,8 @@
 # RobustDownload.NET 🚀
 
-Keep your legacy .NET apps connected! Reliable HTTPS downloads using curl/wget/PowerShell wrappers to overcome TLS errors.
-
 **Your Fallback Hero & Swiss Army Knife for HTTP(S) Downloads in Legacy .NET Applications**
+
+Keep your legacy .NET apps connected! Reliable HTTPS downloads using curl/wget/PowerShell wrappers to overcome TLS errors.
 
 [![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.5+-blue.svg)](https://dotnet.microsoft.com/download/dotnet-framework)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
