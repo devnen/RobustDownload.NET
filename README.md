@@ -381,26 +381,6 @@ Contributions are welcome! If you find bugs, have feature requests, or want to i
 5.  Push to the branch (`git push origin feature/YourFeature`).
 6.  Open a Pull Request.
 
-## License 📄
-
-Copyright [Year] [Your Name or Your Company Name]
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-You can find the full license text in the [LICENSE](LICENSE) file included with this distribution.
-
-*(Note: You should replace `[Year] [Your Name or Your Company Name]` with the appropriate copyright holder information. Also, ensure you create a `LICENSE` file in your repository root containing the full Apache 2.0 license text.)*
-
 ## Acknowledgements 🙏
 
 *   Inspired by the real-world challenges of maintaining legacy .NET applications in a modern web environment.
