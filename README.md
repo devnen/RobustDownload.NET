@@ -1,13 +1,11 @@
 # RobustDownload.NET 🚀
 
-Keep your legacy .NET apps connected! Reliable HTTPS downloads using curl/wget/PowerShell wrappers to overcome TLS errors. 
-
-![RobustDownload.NET Logo](https://via.placeholder.com/150x150.png?text=RD.NET)
+Keep your legacy .NET apps connected! Reliable HTTPS downloads using curl/wget/PowerShell wrappers to overcome TLS errors.
 
 **Your Fallback Hero & Swiss Army Knife for HTTP(S) Downloads in Legacy .NET Applications**
 
 [![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.5+-blue.svg)](https://dotnet.microsoft.com/download/dotnet-framework)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 ## The Problem: When .NET Framework Just Won't Connect 😩
 
@@ -385,7 +383,23 @@ Contributions are welcome! If you find bugs, have feature requests, or want to i
 
 ## License 📄
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Copyright [Year] [Your Name or Your Company Name]
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+You can find the full license text in the [LICENSE](LICENSE) file included with this distribution.
+
+*(Note: You should replace `[Year] [Your Name or Your Company Name]` with the appropriate copyright holder information. Also, ensure you create a `LICENSE` file in your repository root containing the full Apache 2.0 license text.)*
 
 ## Acknowledgements 🙏
 
@@ -396,4 +410,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 *RobustDownload.NET: Because sometimes, you just need your downloads to **work**.*
-```
