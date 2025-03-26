@@ -4,10 +4,10 @@
 
 Keep your legacy .NET apps connected! Reliable HTTPS downloads using curl/wget/PowerShell wrappers to overcome TLS errors.
 
-[![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.5+-blue.svg)](https://dotnet.microsoft.com/download/dotnet-framework)
+[![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.0+-blue.svg)](https://dotnet.microsoft.com/download/dotnet-framework)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
-## The Problem: When .NET Framework Just Won't Connect 😩
+## The Problem: When .NET Just Won't Connect 😩
 
 Have you ever stared in frustration at this error message?
 
@@ -15,7 +15,7 @@ Have you ever stared in frustration at this error message?
 System.Net.WebException: The request was aborted: Could not create SSL/TLS secure channel.
 ```
 
-If you maintain applications built on older .NET Framework versions (like 4.5), you're probably nodding vigorously right now. This error is the bane of developers working with legacy .NET systems trying to connect to modern websites and APIs that demand up-to-date TLS security protocols.
+If you maintain applications built on older .NET Framework versions (like 4.0), you're probably nodding vigorously right now. This error is the bane of developers working with legacy .NET systems trying to connect to modern websites and APIs that demand up-to-date TLS security protocols.
 
 **Why does this happen?** The modern web requires **TLS 1.2 or higher** for secure HTTPS connections. Older protocols (TLS 1.0, 1.1, SSLv3) are being phased out due to security vulnerabilities. Unfortunately, .NET Framework 4.5 and earlier versions often struggle:
 
