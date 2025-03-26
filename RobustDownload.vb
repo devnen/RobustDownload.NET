@@ -1,3 +1,12 @@
+Imports System
+Imports System.IO                ' For File, Path, FileInfo classes
+Imports System.Text              ' For StringBuilder class
+Imports System.Threading         ' For AutoResetEvent, Thread classes
+Imports System.Net               ' For network-related classes
+Imports System.Diagnostics       ' For Process, ProcessStartInfo classes
+Imports System.Collections.Generic ' For Dictionary and List classes
+
+
 ''' <summary>
 ''' A robust class for downloading content from URLs using various methods including curl, wget, and PowerShell.
 ''' DEPENDENCIES: Requires curl.exe and/or wget.exe to be available in the system's PATH for the respective 
@@ -13,7 +22,7 @@ Public Class RobustDownload
         Wget = 2        ' Use wget as primary method
         PowerShell = 3  ' Use PowerShell WebClient as primary method
     End Enum
-    
+
     ''' <summary>
     ''' Class to hold the result of a download operation.
     ''' </summary>
@@ -22,7 +31,7 @@ Public Class RobustDownload
         ''' Whether the download was successful.
         ''' </summary>
         Public Property Success As Boolean = False
-        
+
         ''' <summary>
         ''' The downloaded content as a string (if text content was downloaded).
         ''' NOTE: When content is captured directly from command-line tools (not from file),
@@ -30,47 +39,47 @@ Public Class RobustDownload
         ''' Use DownloadStringWithEncoding for explicit encoding control.
         ''' </summary>
         Public Property Content As String = ""
-        
+
         ''' <summary>
         ''' The downloaded content as a byte array (if binary content was downloaded).
         ''' </summary>
         Public Property Data As Byte() = Nothing
-        
+
         ''' <summary>
         ''' Path to the saved file (if content was saved to a file).
         ''' </summary>
         Public Property FilePath As String = ""
-        
+
         ''' <summary>
         ''' Error message if the download failed.
         ''' </summary>
         Public Property ErrorMessage As String = ""
-        
+
         ''' <summary>
         ''' The download method that was successfully used.
         ''' </summary>
         Public Property UsedMethod As DownloadMethod = DownloadMethod.Auto
-        
+
         ''' <summary>
         ''' HTTP status code if available. Note: This might be approximate as not all tools 
         ''' provide direct access to the status code. Default is 200 for success, 0 for failure.
         ''' </summary>
         Public Property StatusCode As Integer = 0
-        
+
         ''' <summary>
         ''' Duration of the download operation in milliseconds.
         ''' </summary>
         Public Property DurationMs As Long = 0
-        
+
         ''' <summary>
         ''' Collection of errors from all attempted methods if multiple methods were tried.
         ''' </summary>
         Public Property AllErrors As New Dictionary(Of DownloadMethod, String)
-        
+
         ''' <summary>
         ''' Creates a new success result.
         ''' </summary>
-        Public Shared Function CreateSuccess(method As DownloadMethod, Optional content As String = "", 
+        Public Shared Function CreateSuccess(method As DownloadMethod, Optional content As String = "",
                                           Optional data As Byte() = Nothing, Optional filePath As String = "",
                                           Optional statusCode As Integer = 200,
                                           Optional durationMs As Long = 0) As DownloadResult
@@ -84,11 +93,11 @@ Public Class RobustDownload
                 .DurationMs = durationMs
             }
         End Function
-        
+
         ''' <summary>
         ''' Creates a new failure result.
         ''' </summary>
-        Public Shared Function CreateFailure(errorMessage As String, method As DownloadMethod, 
+        Public Shared Function CreateFailure(errorMessage As String, method As DownloadMethod,
                                           Optional statusCode As Integer = 0,
                                           Optional durationMs As Long = 0) As DownloadResult
             Return New DownloadResult() With {
@@ -100,7 +109,7 @@ Public Class RobustDownload
             }
         End Function
     End Class
-    
+
     ''' <summary>
     ''' Downloads content from a URL using the specified method with fallback options.
     ''' Returns a DownloadResult object containing the result status and content.
@@ -129,22 +138,22 @@ Public Class RobustDownload
                                   Optional proxyUrl As String = "",
                                   Optional outputFile As String = "",
                                   Optional allowInsecureSSL As Boolean = False) As DownloadResult
-        
+
         ' Track operation time
         Dim startTime As Long = DateTime.Now.Ticks
-        
+
         ' Flag to determine if we're saving to a file
         Dim isSavingToFile As Boolean = Not String.IsNullOrEmpty(outputFile)
-        
+
         ' Create a temporary output file if needed
         Dim tempOutputFile As String = ""
         If isSavingToFile Then
             tempOutputFile = outputFile
         End If
-        
+
         ' Determine methods to try based on primary method and fallback setting
         Dim methodsToTry As New List(Of DownloadMethod)
-        
+
         If method = DownloadMethod.Auto Then
             ' Try curl first, then wget, then PowerShell
             methodsToTry.Add(DownloadMethod.Curl)
@@ -153,7 +162,7 @@ Public Class RobustDownload
         Else
             ' Start with the specified method
             methodsToTry.Add(method)
-            
+
             ' Add fallbacks if enabled
             If enableFallback Then
                 If method <> DownloadMethod.Curl Then methodsToTry.Add(DownloadMethod.Curl)
@@ -161,14 +170,14 @@ Public Class RobustDownload
                 If method <> DownloadMethod.PowerShell Then methodsToTry.Add(DownloadMethod.PowerShell)
             End If
         End If
-        
+
         ' Create a result to collect errors if we need to try multiple methods
         Dim finalResult As New DownloadResult()
-        
+
         ' Try each method in order until one succeeds
         For Each downloadMethod In methodsToTry
             Dim result As DownloadResult = Nothing
-            
+
             Select Case downloadMethod
                 Case DownloadMethod.Curl
                     If IsCurlAvailable() Then
@@ -182,7 +191,7 @@ Public Class RobustDownload
                             finalResult.AllErrors(DownloadMethod.Curl) = result.ErrorMessage
                         End If
                     End If
-                
+
                 Case DownloadMethod.Wget
                     If IsWgetAvailable() Then
                         result = DownloadWithWget(url, tempOutputFile, useragent, username, password, headers, timeoutSeconds, proxyUrl, allowInsecureSSL)
@@ -195,7 +204,7 @@ Public Class RobustDownload
                             finalResult.AllErrors(DownloadMethod.Wget) = result.ErrorMessage
                         End If
                     End If
-                
+
                 Case DownloadMethod.PowerShell
                     result = DownloadWithPowerShell(url, tempOutputFile, useragent, username, password, headers, timeoutSeconds, proxyUrl, allowInsecureSSL)
                     If result.Success Then
@@ -208,22 +217,22 @@ Public Class RobustDownload
                     End If
             End Select
         Next
-        
+
         ' If we get here, all methods failed
         Dim errorMsg As New StringBuilder("All download methods failed for URL: " & url)
-        
+
         ' Add detailed errors from each method that was tried
         If finalResult.AllErrors.Count > 0 Then
             errorMsg.AppendLine()
             errorMsg.AppendLine("Detailed errors by method:")
-            For Each err In finalResult.AllErrors
-                errorMsg.AppendLine($"- {err.Key}: {err.Value}")
+            For Each err2 In finalResult.AllErrors
+                errorMsg.AppendLine("- " & err2.Key.ToString() & ": " & err2.Value)
             Next
         End If
-        
+
         Return DownloadResult.CreateFailure(errorMsg.ToString(), method, 0, (DateTime.Now.Ticks - startTime) \ 10000)
     End Function
-    
+
     ''' <summary>
     ''' Downloads a string from a URL using the best available method.
     ''' This is a simplified version of Download that returns just the string content.
@@ -241,7 +250,7 @@ Public Class RobustDownload
                                        Optional method As DownloadMethod = DownloadMethod.Auto,
                                        Optional defaultValue As String = "",
                                        Optional useragent As String = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0") As String
-        
+
         Dim result As DownloadResult = Download(url, method, True, useragent)
         If result.Success Then
             Return result.Content
@@ -250,7 +259,7 @@ Public Class RobustDownload
             Return defaultValue
         End If
     End Function
-    
+
     ''' <summary>
     ''' Downloads content from a URL using curl.
     ''' </summary>
@@ -265,12 +274,12 @@ Public Class RobustDownload
                                           timeoutSeconds As Integer,
                                           proxyUrl As String,
                                           allowInsecureSSL As Boolean) As DownloadResult
-        
+
         Dim stdOutput As New StringBuilder()
         Dim stdError As New StringBuilder()
         Dim statusCode As Integer = 0
         Dim isSavingToFile As Boolean = Not String.IsNullOrEmpty(outputFile)
-        
+
         Try
             ' Create process start info
             Dim startInfo As New ProcessStartInfo()
@@ -279,64 +288,64 @@ Public Class RobustDownload
             startInfo.UseShellExecute = False
             startInfo.RedirectStandardOutput = True
             startInfo.RedirectStandardError = True
-            
+
             ' Build arguments
             Dim args As New StringBuilder()
-            
+
             ' Basic curl options
             args.Append("-s -L ")  ' -s: silent, -L: follow redirects
-            
+
             ' Add write-out option to get status code
             args.Append("-w ""%{http_code}"" ")
-            
+
             ' Add insecure SSL flag only if explicitly allowed
             If allowInsecureSSL Then
                 args.Append("-k ")  ' -k: insecure, allows connections to SSL sites without certificates
                 Debug.Print("WARNING: Using insecure SSL connections with curl")
             End If
-            
+
             ' User agent
             args.Append("-A """).Append(useragent).Append(""" ")
-            
+
             ' Authentication
             If Not String.IsNullOrEmpty(username) AndAlso Not String.IsNullOrEmpty(password) Then
                 args.Append("--user ").Append(username).Append(":").Append(password).Append(" ")
             End If
-            
+
             ' Proxy
             If Not String.IsNullOrEmpty(proxyUrl) Then
                 args.Append("--proxy ").Append(proxyUrl).Append(" ")
             End If
-            
+
             ' Headers
             If headers IsNot Nothing AndAlso headers.Count > 0 Then
                 For Each header In headers
                     args.Append("-H """).Append(header.Key).Append(": ").Append(header.Value).Append(""" ")
                 Next
             End If
-            
+
             ' Timeout - add both connect timeout and maximum operation time
             args.Append("--connect-timeout ").Append(timeoutSeconds).Append(" ")
             args.Append("--max-time ").Append(timeoutSeconds).Append(" ")
-            
+
             ' URL
             args.Append("""").Append(url).Append(""" ")
-            
+
             ' Output file if specified
             If isSavingToFile Then
                 args.Append("-o """).Append(outputFile).Append(""" ")
             End If
-            
+
             startInfo.Arguments = args.ToString()
-            
+
             ' Execute curl with proper stream handling
             Using process As New Process()
                 process.StartInfo = startInfo
-                
+
                 ' Set up output and error handling
                 Dim outputWaitHandle As New AutoResetEvent(False)
                 Dim errorWaitHandle As New AutoResetEvent(False)
-                
+
                 AddHandler process.OutputDataReceived,
                     Sub(sender, e)
                         If e.Data IsNot Nothing Then
@@ -350,7 +359,7 @@ Public Class RobustDownload
                             outputWaitHandle.Set()
                         End If
                     End Sub
-                
+
                 AddHandler process.ErrorDataReceived,
                     Sub(sender, e)
                         If e.Data IsNot Nothing Then
@@ -359,28 +368,28 @@ Public Class RobustDownload
                             errorWaitHandle.Set()
                         End If
                     End Sub
-                
+
                 ' Start the process
                 process.Start()
-                
+
                 ' Begin reading stdout and stderr asynchronously
                 process.BeginOutputReadLine()
                 process.BeginErrorReadLine()
-                
+
                 ' Wait for the process to exit
                 If process.WaitForExit(timeoutSeconds * 1000) Then
                     ' Wait for async reads to complete
                     outputWaitHandle.WaitOne(1000)
                     errorWaitHandle.WaitOne(1000)
-                    
+
                     ' Check result
                     Dim exitCode As Integer = process.ExitCode
                     Dim errorText As String = stdError.ToString().Trim()
-                    
+
                     If exitCode = 0 Then
                         ' Set default status code if we couldn't parse it
                         If statusCode = 0 Then statusCode = 200
-                        
+
                         ' Check if HTTP status indicates success (2xx)
                         If statusCode >= 200 AndAlso statusCode < 300 Then
                             ' Success
@@ -421,7 +430,7 @@ Public Class RobustDownload
                     Catch ex As Exception
                         ' Ignore errors killing the process
                     End Try
-                    
+
                     Return DownloadResult.CreateFailure("Curl process timed out after " & timeoutSeconds & " seconds", DownloadMethod.Curl)
                 End If
             End Using
@@ -429,7 +438,7 @@ Public Class RobustDownload
             Return DownloadResult.CreateFailure("Curl execution error: " & ex.Message, DownloadMethod.Curl)
         End Try
     End Function
-    
+
     ''' <summary>
     ''' Downloads content from a URL using wget.
     ''' </summary>
@@ -444,13 +453,13 @@ Public Class RobustDownload
                                           timeoutSeconds As Integer,
                                           proxyUrl As String,
                                           allowInsecureSSL As Boolean) As DownloadResult
-        
+
         Dim stdOutput As New StringBuilder()
         Dim stdError As New StringBuilder()
         Dim isSavingToFile As Boolean = Not String.IsNullOrEmpty(outputFile)
         Dim tempOutputFile As String = If(isSavingToFile, outputFile, Path.GetTempFileName())
         Dim statusCode As Integer = 0
-        
+
         Try
             ' Create process start info
             Dim startInfo As New ProcessStartInfo()
@@ -459,64 +468,64 @@ Public Class RobustDownload
             startInfo.UseShellExecute = False
             startInfo.RedirectStandardOutput = True
             startInfo.RedirectStandardError = True
-            
+
             ' Set proxy environment variables if specified
             If Not String.IsNullOrEmpty(proxyUrl) Then
                 startInfo.EnvironmentVariables("http_proxy") = proxyUrl
                 startInfo.EnvironmentVariables("https_proxy") = proxyUrl
             End If
-            
+
             ' Build arguments
             Dim args As New StringBuilder()
-            
+
             ' Basic wget options - quiet mode but show server response
             args.Append("-q -S ")  ' -q: quiet, -S: show server response in stderr
-            
+
             ' Add insecure SSL flag only if explicitly allowed
             If allowInsecureSSL Then
                 args.Append("--no-check-certificate ")
                 Debug.Print("WARNING: Using insecure SSL connections with wget")
             End If
-            
+
             ' User agent
             args.Append("--user-agent=""").Append(useragent).Append(""" ")
-            
+
             ' Authentication
             If Not String.IsNullOrEmpty(username) AndAlso Not String.IsNullOrEmpty(password) Then
                 args.Append("--http-user=").Append(username).Append(" ")
                 args.Append("--http-password=").Append(password).Append(" ")
             End If
-            
+
             ' Headers
             If headers IsNot Nothing AndAlso headers.Count > 0 Then
                 For Each header In headers
                     args.Append("--header=""").Append(header.Key).Append(": ").Append(header.Value).Append(""" ")
                 Next
             End If
-            
+
             ' Timeout
             args.Append("-T ").Append(timeoutSeconds).Append(" ")
-            
+
             ' Output to stdout if not saving to file
             If Not isSavingToFile Then
                 args.Append("-O - ")  ' Output to stdout
             Else
                 args.Append("-O """).Append(tempOutputFile).Append(""" ")
             End If
-            
+
             ' URL
             args.Append("""").Append(url).Append("""")
-            
+
             startInfo.Arguments = args.ToString()
-            
+
             ' Execute wget with proper stream handling
             Using process As New Process()
                 process.StartInfo = startInfo
-                
+
                 ' Set up output and error handling
                 Dim outputWaitHandle As New AutoResetEvent(False)
                 Dim errorWaitHandle As New AutoResetEvent(False)
-                
+
                 AddHandler process.OutputDataReceived,
                     Sub(sender, e)
                         If e.Data IsNot Nothing Then
@@ -525,7 +534,7 @@ Public Class RobustDownload
                             outputWaitHandle.Set()
                         End If
                     End Sub
-                
+
                 AddHandler process.ErrorDataReceived,
                     Sub(sender, e)
                         If e.Data IsNot Nothing Then
@@ -541,35 +550,35 @@ Public Class RobustDownload
                                     ' Ignore parsing errors
                                 End Try
                             End If
-                            
+
                             stdError.AppendLine(e.Data)
                         Else
                             errorWaitHandle.Set()
                         End If
                     End Sub
-                
+
                 ' Start the process
                 process.Start()
-                
+
                 ' Begin reading stdout and stderr asynchronously
                 process.BeginOutputReadLine()
                 process.BeginErrorReadLine()
-                
+
                 ' Wait for the process to exit
                 If process.WaitForExit(timeoutSeconds * 1000) Then
                     ' Wait for async reads to complete
                     outputWaitHandle.WaitOne(1000)
                     errorWaitHandle.WaitOne(1000)
-                    
+
                     ' Check result
                     Dim exitCode As Integer = process.ExitCode
                     Dim errorText As String = stdError.ToString().Trim()
-                    
+
                     ' Set default status code if we couldn't extract it
                     If statusCode = 0 AndAlso exitCode = 0 Then
                         statusCode = 200  ' Assume 200 OK if process succeeded
                     End If
-                    
+
                     If exitCode = 0 Then
                         ' Success
                         If isSavingToFile Then
@@ -582,7 +591,7 @@ Public Class RobustDownload
                         Else
                             ' Return the content from stdout
                             Dim content As String = stdOutput.ToString()
-                            
+
                             ' Clean up temporary file
                             Try
                                 If File.Exists(tempOutputFile) Then
@@ -591,7 +600,7 @@ Public Class RobustDownload
                             Catch ex As Exception
                                 ' Ignore temp file cleanup errors
                             End Try
-                            
+
                             If Not String.IsNullOrEmpty(content) Then
                                 Return DownloadResult.CreateSuccess(DownloadMethod.Wget, content, Nothing, "", statusCode)
                             Else
@@ -610,7 +619,7 @@ Public Class RobustDownload
                                 ' Ignore temp file cleanup errors
                             End Try
                         End If
-                        
+
                         Dim msg As String = "Wget process exited with code: " & exitCode
                         If Not String.IsNullOrEmpty(errorText) Then
                             msg &= Environment.NewLine & "Wget error: " & errorText
@@ -626,7 +635,7 @@ Public Class RobustDownload
                     Catch ex As Exception
                         ' Ignore errors killing the process
                     End Try
-                    
+
                     ' Clean up temporary file if we created one
                     If Not isSavingToFile Then
                         Try
@@ -637,7 +646,7 @@ Public Class RobustDownload
                             ' Ignore temp file cleanup errors
                         End Try
                     End If
-                    
+
                     Return DownloadResult.CreateFailure("Wget process timed out after " & timeoutSeconds & " seconds", DownloadMethod.Wget)
                 End If
             End Using
@@ -652,11 +661,11 @@ Public Class RobustDownload
                     ' Ignore temp file cleanup errors
                 End Try
             End If
-            
+
             Return DownloadResult.CreateFailure("Wget execution error: " & ex.Message, DownloadMethod.Wget)
         End Try
     End Function
-    
+
     ''' <summary>
     ''' Downloads content from a URL using PowerShell.
     ''' </summary>
@@ -671,18 +680,18 @@ Public Class RobustDownload
                                                 timeoutSeconds As Integer,
                                                 proxyUrl As String,
                                                 allowInsecureSSL As Boolean) As DownloadResult
-        
+
         Dim isSavingToFile As Boolean = Not String.IsNullOrEmpty(outputFile)
         Dim tempOutputFile As String = If(isSavingToFile, outputFile, Path.GetTempFileName())
         Dim scriptFile As String = Path.GetTempFileName() & ".ps1"
-        
+
         Try
             ' Build PowerShell script content
             Dim script As New StringBuilder()
-            
+
             ' Set security protocol to support multiple TLS versions
             script.AppendLine("[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls11 -bor [System.Net.SecurityProtocolType]::Tls")
-            
+
             ' Skip certificate validation if requested (INSECURE)
             If allowInsecureSSL Then
                 script.AppendLine("Add-Type @'")
@@ -697,7 +706,7 @@ Public Class RobustDownload
                 script.AppendLine("[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy")
                 Debug.Print("WARNING: Using insecure SSL connections with PowerShell")
             End If
-            
+
             ' Use Invoke-WebRequest for better status code reporting
             script.AppendLine("try {")
             script.AppendLine("    $params = @{")
@@ -705,7 +714,7 @@ Public Class RobustDownload
             script.AppendLine("        UseBasicParsing = $true")
             script.AppendLine("        TimeoutSec = " & timeoutSeconds)
             script.AppendLine("        UserAgent = '" & useragent.Replace("'", "''") & "'")
-            
+
             ' Add headers
             If headers IsNot Nothing AndAlso headers.Count > 0 Then
                 script.AppendLine("        Headers = @{")
@@ -718,23 +727,23 @@ Public Class RobustDownload
                 script.AppendLine("")
                 script.AppendLine("        }")
             End If
-            
+
             ' Add credentials
             If Not String.IsNullOrEmpty(username) AndAlso Not String.IsNullOrEmpty(password) Then
                 script.AppendLine("        Credential = (New-Object System.Management.Automation.PSCredential('" & username.Replace("'", "''") & "', (ConvertTo-SecureString -String '" & password.Replace("'", "''") & "' -AsPlainText -Force)))")
             End If
-            
+
             ' Add proxy
             If Not String.IsNullOrEmpty(proxyUrl) Then
                 script.AppendLine("        Proxy = '" & proxyUrl.Replace("'", "''") & "'")
             End If
-            
+
             script.AppendLine("    }")
             script.AppendLine("    $response = Invoke-WebRequest @params")
-            
+
             ' Output status code on first line, content follows
             script.AppendLine("    Write-Output ('STATUS_CODE:' + $response.StatusCode)")
-            
+
             ' Save content
             If isSavingToFile Then
                 script.AppendLine("    $response.Content | Set-Content -Path '" & tempOutputFile.Replace("'", "''") & "' -Encoding Byte")
@@ -743,7 +752,7 @@ Public Class RobustDownload
             Else
                 script.AppendLine("    $response.Content")  ' Output content to stdout
             End If
-            
+
             script.AppendLine("} catch {")
             script.AppendLine("    if ($_.Exception.Response -ne $null) {")
             script.AppendLine("        Write-Output ('STATUS_CODE:' + [int]$_.Exception.Response.StatusCode)")
@@ -751,10 +760,10 @@ Public Class RobustDownload
             script.AppendLine("    Write-Error $_.Exception.Message")
             script.AppendLine("    exit 1")
             script.AppendLine("}")
-            
+
             ' Write script to file
             File.WriteAllText(scriptFile, script.ToString())
-            
+
             ' Create process start info for PowerShell
             Dim startInfo As New ProcessStartInfo()
             startInfo.FileName = "powershell.exe"
@@ -763,19 +772,19 @@ Public Class RobustDownload
             startInfo.UseShellExecute = False
             startInfo.RedirectStandardOutput = True
             startInfo.RedirectStandardError = True
-            
+
             ' Execute PowerShell script
             Dim stdOutput As New StringBuilder()
             Dim stdError As New StringBuilder()
             Dim statusCode As Integer = 0
-            
+
             Using process As New Process()
                 process.StartInfo = startInfo
-                
+
                 ' Set up output and error handling
                 Dim outputWaitHandle As New AutoResetEvent(False)
                 Dim errorWaitHandle As New AutoResetEvent(False)
-                
+
                 AddHandler process.OutputDataReceived,
                     Sub(sender, e)
                         If e.Data IsNot Nothing Then
@@ -793,7 +802,7 @@ Public Class RobustDownload
                             outputWaitHandle.Set()
                         End If
                     End Sub
-                
+
                 AddHandler process.ErrorDataReceived,
                     Sub(sender, e)
                         If e.Data IsNot Nothing Then
@@ -802,30 +811,30 @@ Public Class RobustDownload
                             errorWaitHandle.Set()
                         End If
                     End Sub
-                
+
                 ' Start the process
                 process.Start()
-                
+
                 ' Begin reading stdout and stderr asynchronously
                 process.BeginOutputReadLine()
                 process.BeginErrorReadLine()
-                
+
                 ' Wait for the process to exit
                 If process.WaitForExit(timeoutSeconds * 2000) Then ' Give PowerShell extra time
                     ' Wait for async reads to complete
                     outputWaitHandle.WaitOne(1000)
                     errorWaitHandle.WaitOne(1000)
-                    
+
                     ' Check result
                     Dim exitCode As Integer = process.ExitCode
                     Dim outputText As String = stdOutput.ToString().Trim()
                     Dim errorText As String = stdError.ToString().Trim()
-                    
+
                     ' Set default status code if we couldn't extract it
                     If statusCode = 0 AndAlso exitCode = 0 Then
                         statusCode = 200  ' Assume 200 OK if process succeeded
                     End If
-                    
+
                     If exitCode = 0 Then
                         ' Success
                         If isSavingToFile Then
@@ -859,7 +868,7 @@ Public Class RobustDownload
                     Catch ex As Exception
                         ' Ignore errors killing the process
                     End Try
-                    
+
                     Return DownloadResult.CreateFailure("PowerShell process timed out after " & (timeoutSeconds * 2) & " seconds", DownloadMethod.PowerShell)
                 End If
             End Using
@@ -871,7 +880,7 @@ Public Class RobustDownload
                 If File.Exists(scriptFile) Then
                     File.Delete(scriptFile)
                 End If
-                
+
                 ' Clean up temp file if not saving to a file
                 If Not isSavingToFile AndAlso File.Exists(tempOutputFile) Then
                     File.Delete(tempOutputFile)
@@ -881,7 +890,7 @@ Public Class RobustDownload
             End Try
         End Try
     End Function
-    
+
     ''' <summary>
     ''' Downloads a file directly to disk.
     ''' </summary>
@@ -909,11 +918,11 @@ Public Class RobustDownload
                                      Optional timeoutSeconds As Integer = 60,
                                      Optional proxyUrl As String = "",
                                      Optional allowInsecureSSL As Boolean = False) As DownloadResult
-        
+
         ' Use Download method with specified output file
         Return Download(url, method, enableFallback, useragent, username, password, headers, timeoutSeconds, proxyUrl, outputFile, allowInsecureSSL)
     End Function
-    
+
     ''' <summary>
     ''' Downloads binary data from a URL.
     ''' </summary>
@@ -939,34 +948,34 @@ Public Class RobustDownload
                                      Optional timeoutSeconds As Integer = 60,
                                      Optional proxyUrl As String = "",
                                      Optional allowInsecureSSL As Boolean = False) As Byte()
-        
+
         Try
             ' Create temporary file
             Dim tempFile As String = Path.GetTempFileName()
-            
+
             ' Download to temporary file
             Dim result As DownloadResult = Download(url, method, enableFallback, useragent, username, password, headers, timeoutSeconds, proxyUrl, tempFile, allowInsecureSSL)
-            
+
             ' Check if download was successful
             If result.Success Then
                 ' Read file as binary data
                 If File.Exists(tempFile) Then
                     Dim data As Byte() = File.ReadAllBytes(tempFile)
-                    
+
                     ' Clean up temporary file
                     Try
                         File.Delete(tempFile)
                     Catch
                         ' Ignore cleanup errors
                     End Try
-                    
+
                     Return data
                 End If
             End If
-            
+
             ' Log error details
             Debug.Print("DownloadData failed: " + result.ErrorMessage)
-            
+
             ' Clean up temporary file if download failed
             Try
                 If File.Exists(tempFile) Then
@@ -975,14 +984,14 @@ Public Class RobustDownload
             Catch
                 ' Ignore cleanup errors
             End Try
-            
+
             Return Nothing
         Catch ex As Exception
             Debug.Print("DownloadData error: " & ex.Message)
             Return Nothing
         End Try
     End Function
-    
+
     ''' <summary>
     ''' Checks if curl is available on the system.
     ''' </summary>
@@ -994,7 +1003,7 @@ Public Class RobustDownload
             startInfo.UseShellExecute = False
             startInfo.RedirectStandardOutput = True
             startInfo.RedirectStandardError = True
-            
+
             Using process As Process = Process.Start(startInfo)
                 process.WaitForExit(5000)  ' Wait up to 5 seconds
                 Return process.ExitCode = 0
@@ -1003,7 +1012,7 @@ Public Class RobustDownload
             Return False
         End Try
     End Function
-    
+
     ''' <summary>
     ''' Checks if wget is available on the system.
     ''' </summary>
@@ -1015,7 +1024,7 @@ Public Class RobustDownload
             startInfo.UseShellExecute = False
             startInfo.RedirectStandardOutput = True
             startInfo.RedirectStandardError = True
-            
+
             Using process As Process = Process.Start(startInfo)
                 process.WaitForExit(5000)  ' Wait up to 5 seconds
                 Return process.ExitCode = 0
@@ -1024,7 +1033,7 @@ Public Class RobustDownload
             Return False
         End Try
     End Function
-    
+
     ''' <summary>
     ''' Gets the best available download method on the current system.
     ''' </summary>
@@ -1038,7 +1047,7 @@ Public Class RobustDownload
             Return DownloadMethod.PowerShell
         End If
     End Function
-    
+
     ''' <summary>
     ''' Creates a URL with properly encoded query parameters.
     ''' </summary>
@@ -1049,9 +1058,9 @@ Public Class RobustDownload
         If parameters Is Nothing OrElse parameters.Count = 0 Then
             Return baseUrl
         End If
-        
+
         Dim url As New StringBuilder(baseUrl)
-        
+
         ' Add ? or & depending on whether the base URL already has parameters
         If baseUrl.Contains("?") Then
             If Not baseUrl.EndsWith("?") AndAlso Not baseUrl.EndsWith("&") Then
@@ -1060,24 +1069,24 @@ Public Class RobustDownload
         Else
             url.Append("?")
         End If
-        
+
         ' Add encoded parameters
         Dim isFirst As Boolean = True
         For Each param In parameters
             If Not isFirst Then
                 url.Append("&")
             End If
-            
+
             url.Append(Uri.EscapeDataString(param.Key))
             url.Append("=")
             url.Append(Uri.EscapeDataString(param.Value))
-            
+
             isFirst = False
         Next
-        
+
         Return url.ToString()
     End Function
-    
+
     ''' <summary>
     ''' Downloads a string with explicit encoding from a URL.
     ''' Use this method when specific text encoding is important.
@@ -1094,14 +1103,14 @@ Public Class RobustDownload
                                                    Optional method As DownloadMethod = DownloadMethod.Auto,
                                                    Optional defaultValue As String = "",
                                                    Optional allowInsecureSSL As Boolean = False) As String
-        
+
         ' Create temporary file
         Dim tempFile As String = Path.GetTempFileName()
-        
+
         Try
             ' Download to temporary file
             Dim result As DownloadResult = Download(url, method, True, "Mozilla/5.0", "", "", Nothing, 60, "", tempFile, allowInsecureSSL)
-            
+
             ' Check if download was successful
             If result.Success Then
                 ' Read file with specified encoding
@@ -1110,7 +1119,7 @@ Public Class RobustDownload
                     Return content
                 End If
             End If
-            
+
             Debug.Print("DownloadStringWithEncoding failed: " & result.ErrorMessage)
             Return defaultValue
         Catch ex As Exception
@@ -1127,26 +1136,26 @@ Public Class RobustDownload
             End Try
         End Try
     End Function
-    
+
     ''' <summary>
     ''' Verifies if all required external tools are available for each download method.
     ''' </summary>
     ''' <returns>A dictionary with each method and its availability status.</returns>
     Public Shared Function VerifyDependencies() As Dictionary(Of DownloadMethod, Boolean)
         Dim result As New Dictionary(Of DownloadMethod, Boolean)
-        
+
         ' Check curl
         result(DownloadMethod.Curl) = IsCurlAvailable()
-        
+
         ' Check wget
         result(DownloadMethod.Wget) = IsWgetAvailable()
-        
+
         ' Check PowerShell (always available on modern Windows)
         Try
             Dim startInfo As New ProcessStartInfo("powershell.exe", "-Command ""exit 0""")
             startInfo.CreateNoWindow = True
             startInfo.UseShellExecute = False
-            
+
             Using process As Process = Process.Start(startInfo)
                 process.WaitForExit(5000)
                 result(DownloadMethod.PowerShell) = (process.ExitCode = 0)
@@ -1154,7 +1163,7 @@ Public Class RobustDownload
         Catch
             result(DownloadMethod.PowerShell) = False
         End Try
-        
+
         Return result
     End Function
 End Class
